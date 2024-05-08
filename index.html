@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <canvas id="canvas"></canvas>
+    <script>
+      const canvas = document.getElementById("canvas");
+      let ctx = canvas.getContext("2d");
+
+      // Obtiene las dimensiones de la pantalla actual
+      const window_height = window.innerHeight;
+      const window_width = window.innerWidth;
+
+      canvas.height = window_height;
+      canvas.width = window_width;
+
+      canvas.style.background = "#ff8";
+
+      class Circle {
+        constructor(x, y, radius, color, text, speed, angle) {
+          this.posX = x;
+          this.posY = y;
+          this.radius = radius;
+          this.color = color;
+          this.originalColor = color; // Guarda el color original
+          this.text = text;
+          this.speed = speed;
+          this.angle = angle;
+
+          this.dx = Math.cos(this.angle) * this.speed;
+          this.dy = Math.sin(this.angle) * this.speed;
+        }
+
+        draw(context) {
+          context.beginPath();
+
+          context.strokeStyle = this.color;
+          context.arc(this.posX, this.posY, this.radius, 0, Math.PI * 2, false);
+          context.stroke();
+          context.closePath();
+        }
+
+        update(context) {
+          this.draw(context);
+
+          if (
+            this.posX + this.radius > window_width ||
+            this.posX - this.radius < 0 ||
+            this.posY - this.radius < 0 ||
+            this.posY + this.radius > window_height
+          ) {
+            this.dx = -this.dx;
+            this.dy = -this.dy;
+            this.color = "red"; // Cambiar a rojo al colisionar con la ventana
+          }
+
+          this.posX += this.dx;
+          this.posY += this.dy;
+        }
+
+        // Método para cambiar el color del círculo
+        changeColor(color) {
+          this.color = color;
+        }
+
+        // Método para restaurar el color original del círculo
+        restoreColor() {
+          this.color = this.originalColor;
+        }
+
+        // Método para cambiar la dirección del círculo al colisionar
+        changeDirection(angle) {
+          this.angle = angle;
+          this.dx = Math.cos(this.angle) * this.speed;
+          this.dy = Math.sin(this.angle) * this.speed;
+        }
+      }
+
+      // Función para calcular la distancia entre dos puntos
+      function getDistance(posX1, posY1, posX2, posY2) {
+        let result = Math.sqrt(
+          Math.pow(posX2 - posX1, 2) + Math.pow(posY2 - posY1, 2)
+        );
+        return result;
+      }
+
+      // Crear un arreglo para almacenar los círculos
+      let circles = [];
+
+      // Función para generar círculos aleatorios
+      function generateRandomCircle() {
+        let randomX = Math.random() * (window_width - 100) + 50;
+        let randomY = Math.random() * (window_height - 100) + 50;
+        let randomRadius = Math.floor(Math.random() * 50 + 20);
+        let randomColor = `rgb(${Math.floor(Math.random() * 256)}, ${Math.floor(
+          Math.random() * 256
+        )}, ${Math.floor(Math.random() * 256)})`;
+        let randomSpeed = Math.random() * 5 + 2;
+        let randomAngle = Math.random() * Math.PI * 2; // Ángulo aleatorio entre 0 y 2π
+        let newCircle = new Circle(
+          randomX,
+          randomY,
+          randomRadius,
+          randomColor,
+          "",
+          randomSpeed,
+          randomAngle
+        );
+        circles.push(newCircle);
+      }
+
+      // Generar 5 círculos iniciales
+      for (let i = 0; i < 5; i++) {
+        generateRandomCircle();
+      }
+
+      // Función para actualizar el movimiento de los círculos y verificar colisiones
+      let updateCircle = function () {
+        requestAnimationFrame(updateCircle);
+        ctx.clearRect(0, 0, window_width, window_height);
+
+        // Actualizar y dibujar todos los círculos
+        circles.forEach((circle) => {
+          circle.update(ctx);
+
+          // Verificar colisión entre los círculos y la ventana
+          if (
+            circle.posX + circle.radius > window_width ||
+            circle.posX - circle.radius < 0 ||
+            circle.posY - circle.radius < 0 ||
+            circle.posY + circle.radius > window_height
+          ) {
+            circle.changeColor("red");
+          } else {
+            circle.restoreColor();
+          }
+
+          // Verificar colisión entre los círculos
+          circles.forEach((otherCircle) => {
+            if (circle !== otherCircle) {
+              if (
+                getDistance(
+                  circle.posX,
+                  circle.posY,
+                  otherCircle.posX,
+                  otherCircle.posY
+                ) <
+                circle.radius + otherCircle.radius
+              ) {
+                // Calcular el ángulo de colisión
+                let angle = Math.atan2(
+                  otherCircle.posY - circle.posY,
+                  otherCircle.posX - circle.posX
+                );
+
+                // Cambiar la dirección de los círculos al colisionar
+                circle.changeDirection(angle + Math.PI);
+                otherCircle.changeDirection(angle);
+              }
+            }
+          });
+        });
+      };
+
+      // Iniciar el bucle de actualización
+      updateCircle();
+    </script>
+  </body>
+</html>
